@@ -26,27 +26,39 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-      - name: Apply non-breaking npm audit fixes
+      - name: Upgrade vulnerable Next.js release line and compatible dependencies
         run: |
-          # npm audit fix returns 1 when unfixed advisories remain, even if it
-          # successfully updates the lockfile. Verify changes before committing.
-          npm audit fix --no-fund || echo "Some advisories require separate major-version upgrades; continuing with verification."
-      - name: Verify updated dependencies and app
+          # Next.js 14 is unsupported and affected by critical advisories.
+          # Keep React 18 for this migration; the app is validated below.
+          npm install --save-exact next@15.5.29
+          npm install --save-dev --save-exact eslint-config-next@15.5.29
+          # npm audit fix may return nonzero for remaining advisories. Do not
+          # treat that as success: the image scan below remains mandatory.
+          npm audit fix --no-fund || echo "Some advisories remain; security scan will enforce HIGH/CRITICAL findings."
+      - name: Verify clean install and application
         run: |
           npm ci
           npm run lint
           npm test
           npm run build
+      - name: Build upgraded production image
+        run: docker build -t tradeix-remediated:${{ github.sha }} .
+      - name: Scan upgraded image before publishing dependency changes
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "tradeix-remediated:${{ github.sha }}"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
       - name: Commit verified package updates
         run: |
           if git diff --quiet -- package.json package-lock.json; then
-            echo "No compatible dependency changes were available."
+            echo "No dependency changes were necessary."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
-          git commit -m "fix(deps): update vulnerable npm dependencies"
+          git commit -m "fix(deps): upgrade Next.js to patched 15.5 release"
           git push origin HEAD:security/require-production-session-secret
 
   lint-and-test:

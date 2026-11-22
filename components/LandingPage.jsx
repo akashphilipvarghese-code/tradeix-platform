@@ -268,7 +268,7 @@ export default function TradeixLanding() {
         <Reveal>
           <Eyebrow>Trust &amp; Security</Eyebrow>
           <h2 className="text-3xl md:text-4xl max-w-2xl leading-tight" style={{ fontFamily: display }}>
-            Built for teams that can't afford to guess.
+            Built for teams that can&apos;t afford to guess.
           </h2>
         </Reveal>
         <Reveal delay={100}>

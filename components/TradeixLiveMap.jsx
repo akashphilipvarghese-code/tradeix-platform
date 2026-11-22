@@ -296,7 +296,7 @@ export default function TradeixLiveMap() {
     return (
       <div className="w-full h-[720px] flex flex-col items-center justify-center gap-3 rounded-xl" style={{ background: T.bg }}>
         <TriangleAlert size={22} color={T.red} />
-        <p className="text-sm" style={{ color: T.text }}>Couldn't reach the live tracking feed.</p>
+        <p className="text-sm" style={{ color: T.text }}>Couldn&apos;t reach the live tracking feed.</p>
         <p className="text-xs max-w-xs text-center" style={{ color: T.textDim }}>Your other Tradeix tools still work — this only affects live map data.</p>
         <button
           onClick={() => setScreenState("ready")}

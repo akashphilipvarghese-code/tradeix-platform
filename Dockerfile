@@ -1,24 +1,25 @@
 # --- deps: install once, cached across builds ---
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
 # --- build: compile the Next.js app ---
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
 # --- runtime: minimal image, non-root user, only what's needed to run ---
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 tradeix
 
-COPY --from=builder /app/public ./public
+# This app has no public/ directory; Next.js standalone output contains the runtime assets.
+# Add a public/ copy only if the repository later introduces static public assets.
 COPY --from=builder --chown=tradeix:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=tradeix:nodejs /app/.next/static ./.next/static
 

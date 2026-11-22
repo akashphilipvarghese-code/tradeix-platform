@@ -1,6 +1,13 @@
 import { SignJWT, jwtVerify } from "jose";
 
-const SECRET = new TextEncoder().encode(process.env.SESSION_SECRET || "dev-only-secret-change-me");
+// Never sign production sessions with a public, predictable development key.
+function getSessionSecret(): Uint8Array {
+  const configured = process.env.SESSION_SECRET?.trim();
+  if (process.env.NODE_ENV === "production" && (!configured || configured.length < 32)) {
+    throw new Error("SESSION_SECRET must contain at least 32 characters in production");
+  }
+  return new TextEncoder().encode(configured || "dev-only-secret-change-me");
+}
 const COOKIE_NAME = "tradeix_session";
 
 export interface SessionPayload {
@@ -14,12 +21,12 @@ export async function signSession(payload: SessionPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(SECRET);
+    .sign(getSessionSecret());
 }
 
 export async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSessionSecret());
     return payload as unknown as SessionPayload;
   } catch {
     // Expired or tampered token — caller treats this exactly like "logged out",
